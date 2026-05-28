@@ -194,6 +194,14 @@
 - 단순 목록 → ChoiceChip 필터(전체/4종) + 날짜 그룹(오늘/어제/이번주/이전) + 캡처 썸네일(없으면 종류 아이콘).
 - 부제목에 `{kind} · {modeLabel} · HH:mm` 정보 밀도 ↑. 그룹 헤더가 날짜를 대체.
 
+### 결정 34. 라벨링 도구 — Roboflow로 확정 (AnyLabeling 후순위)
+- 일자: 2026-05-28
+- 결정 30(Roboflow) → 결정 31(YOLO 도입) → 임시 32(AnyLabeling 검토) → 본 결정으로 Roboflow 복귀.
+- 사유: Roboflow Smart Polygon(SAM 보조)이 Web UI에서 동작하고, 자동 분할·augmentation·export 파이프라인이 통합돼 있음. AnyLabeling은 로컬 무한 사용 가능하나 추가 변환 스크립트 필요.
+- 자격증명: `ml/card_detector/.env` (gitignored). 워크스페이스 `-3nqpn`, 프로젝트 `length-tbyev`, Instance Segmentation 타입.
+- smoke test (더미 2장) 업로드 성공 검증 완료.
+- AnyLabeling용 스크립트(`convert_labelme_to_yolo.py`, `assemble_dataset.py`)는 폴백 옵션으로 유지.
+
 ### 결정 33. ArUco 마커 감지 추가 (W9)
 - 일자: 2026-05-28
 - `aruco_detector.dart` 신설. `opencv_dart`의 `ArucoDetector` + `ArucoDictionary.predefined` 사용.
