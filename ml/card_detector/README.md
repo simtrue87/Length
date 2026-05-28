@@ -31,28 +31,44 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Phase A 작업 순서 (v2: 합성+실사 우선, MIDV-500은 옵션)
+## Phase A 작업 순서 (v3: AnyLabeling 로컬 라벨링)
 
 1. **카드 텍스처 수집** — `synth/card_textures/`에 카드 디자인 PNG 20~30장 (정면, 비율 1.586:1 권장).
-   - 예시 소스: 본인 카드 정면 촬영(번호 마스킹) + 무료 이미지(예: openverse, pixabay에서 "credit card front")
+   - 예시 소스: 본인 카드 정면 촬영(번호 마스킹) + 무료 이미지
 2. **배경 수집** — `synth/backgrounds/`에 배경 100~200장 (책상·바닥·천·종이·소파 등).
-3. **합성 데이터 생성** — `python synth/generate.py --out data/raw/synth --count 3000`
+3. **합성 데이터 생성**:
+   ```
+   .venv/Scripts/python.exe synth/generate.py --out data/raw/synth --count 3000
+   ```
 4. **실사 촬영** — Galaxy A90 5G로 100~200장. 다양한 조건(폰+카드 인접, 반사, 저조도, 기울임).
    `data/raw/real/images/` 에 배치.
-5. **Roboflow 프로젝트 준비** — 웹에서 새 프로젝트 생성, **타입: Instance Segmentation**, 클래스명 `credit_card` (id=0).
-6. **API 설정** — `.env.example` → `.env`로 복사, API 키·워크스페이스·프로젝트 슬러그 입력.
-7. **합성 업로드 (라벨 포함, 자동)**:
+5. **AnyLabeling 설치** — https://github.com/vietanhdev/anylabeling/releases 에서 Windows 빌드 다운로드.
+   - 첫 실행 시 `Brain` 메뉴 → `Segment Anything (SAM)` 모델 다운로드(자동, ~95MB MobileSAM).
+6. **실사 라벨링** (SAM 자동):
+   - AnyLabeling에서 `data/raw/real/images/` 폴더 열기
+   - 각 이미지에서 카드 위 한 번 클릭 → SAM이 카드 마스크 생성 → 폴리곤 자동 변환
+   - 라벨명 `credit_card` 입력
+   - 저장하면 같은 폴더에 `{이미지}.json` 출력 (LabelMe 포맷)
+7. **LabelMe JSON → YOLO seg 변환**:
    ```
-   .venv/Scripts/python.exe upload_to_roboflow.py --src data/raw/synth --batch synth_v1
+   .venv/Scripts/python.exe convert_labelme_to_yolo.py --src data/raw/real
    ```
-8. **실사 업로드 (라벨 없음, UI에서 수동 라벨링)**:
+   SAM이 만든 N점 폴리곤이 minAreaRect로 자동 4점 축약됨.
+8. **데이터셋 병합 + 분할**:
    ```
-   .venv/Scripts/python.exe upload_to_roboflow.py --src data/raw/real --batch real_v1 --no-labels
+   .venv/Scripts/python.exe assemble_dataset.py \
+     --sources data/raw/synth data/raw/real \
+     --out data/dataset
    ```
-9. **Roboflow UI에서 실사 라벨링** — 4점 폴리곤 그리기. 합성은 라벨 자동 import됨.
-10. **버전 생성 + Export** — train 70% / val 20% / test 10% 분할, YOLO seg 포맷으로 zip download.
-11. **`data/` 디렉터리로 zip 압축 해제** — Colab 업로드 준비 완료.
-12. (선택) **MIDV-500 추가** — Phase E에서 정확도 부족 시 `data/sources/midv500.md` 참조
+   train 70% / val 20% / test 10% 자동 분할, `card.yaml` 생성.
+9. **압축 + Drive 업로드**:
+   - `data/dataset/` 폴더 zip
+   - Google Drive `Length/card_yolo/dataset.zip` 업로드
+10. **Colab 학습** — `train_colab.md` 절차로 Phase B 진입.
+11. (선택) **MIDV-500 추가** — Phase E에서 정확도 부족 시 `data/sources/midv500.md` 참조
+
+## 대안: Roboflow (구버전 워크플로우)
+무료 한도 내(1000장/3프로젝트)에서 쓰고 싶다면 `upload_to_roboflow.py` + `.env` 사용. 단, AnyLabeling이 SAM 통합으로 더 빠르므로 권장하지 않음.
 
 ## Phase B 학습
 
