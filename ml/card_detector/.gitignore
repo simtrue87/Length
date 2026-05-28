@@ -3,6 +3,9 @@
 __pycache__/
 *.pyc
 
+# Roboflow 자격증명
+.env
+
 # 데이터·산출물 (용량 큼, 깃에 안 올림)
 data/
 runs/

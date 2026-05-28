@@ -31,16 +31,28 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Phase A 작업 순서
+## Phase A 작업 순서 (v2: 합성+실사 우선, MIDV-500은 옵션)
 
-1. **공개 데이터셋 다운로드** — MIDV-500/2019/2020 중 카드 서브셋
-   - `midv500` Python 패키지 사용 (`requirements.txt`에 포함)
-   - 노트 정리: `data/sources/midv500.md`
-2. **카드 텍스처·배경 수집** — `synth/card_textures/`, `synth/backgrounds/`에 수동 배치
+1. **카드 텍스처 수집** — `synth/card_textures/`에 카드 디자인 PNG 20~30장 (정면, 비율 1.586:1 권장).
+   - 예시 소스: 본인 카드 정면 촬영(번호 마스킹) + 무료 이미지(예: openverse, pixabay에서 "credit card front")
+2. **배경 수집** — `synth/backgrounds/`에 배경 100~200장 (책상·바닥·천·종이·소파 등).
 3. **합성 데이터 생성** — `python synth/generate.py --out data/raw/synth --count 3000`
-4. **실사 촬영** — Galaxy A90 5G로 100~200장, `data/raw/real/` 배치
-5. **Roboflow 업로드 + 4점 폴리곤 라벨링** — train/val/test 자동 분할 후 YOLO seg 포맷 export
-6. **`data/` 디렉터리로 export 결과 압축 풀기**
+4. **실사 촬영** — Galaxy A90 5G로 100~200장. 다양한 조건(폰+카드 인접, 반사, 저조도, 기울임).
+   `data/raw/real/images/` 에 배치.
+5. **Roboflow 프로젝트 준비** — 웹에서 새 프로젝트 생성, **타입: Instance Segmentation**, 클래스명 `credit_card` (id=0).
+6. **API 설정** — `.env.example` → `.env`로 복사, API 키·워크스페이스·프로젝트 슬러그 입력.
+7. **합성 업로드 (라벨 포함, 자동)**:
+   ```
+   .venv/Scripts/python.exe upload_to_roboflow.py --src data/raw/synth --batch synth_v1
+   ```
+8. **실사 업로드 (라벨 없음, UI에서 수동 라벨링)**:
+   ```
+   .venv/Scripts/python.exe upload_to_roboflow.py --src data/raw/real --batch real_v1 --no-labels
+   ```
+9. **Roboflow UI에서 실사 라벨링** — 4점 폴리곤 그리기. 합성은 라벨 자동 import됨.
+10. **버전 생성 + Export** — train 70% / val 20% / test 10% 분할, YOLO seg 포맷으로 zip download.
+11. **`data/` 디렉터리로 zip 압축 해제** — Colab 업로드 준비 완료.
+12. (선택) **MIDV-500 추가** — Phase E에서 정확도 부족 시 `data/sources/midv500.md` 참조
 
 ## Phase B 학습
 
