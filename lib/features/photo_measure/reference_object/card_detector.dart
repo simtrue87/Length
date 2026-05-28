@@ -282,12 +282,6 @@ class CardDetector {
     }
   }
 
-  /// 정규분포형 종형 함수: x가 peak에 가까울수록 1, 멀어질수록 0.
-  double _bell(double x, {required double peak, required double sigma}) {
-    final z = (x - peak) / sigma;
-    return math.exp(-0.5 * z * z);
-  }
-
   /// 4점을 시계방향(TL, TR, BR, BL)으로 정렬.
   List<Offset> _orderClockwise(List<Offset> pts) {
     final cx = pts.map((p) => p.dx).reduce((a, b) => a + b) / 4;

@@ -15,6 +15,7 @@ import '../../../shared/dialogs/confirm_exit.dart';
 import '../../../shared/permissions/camera_permission.dart';
 import '../../../shared/sensors/tilt_warning.dart';
 import '../../result/domain/measurement_result.dart';
+import '../ml/yolo_length_detector.dart';
 import '../planar_rectifier.dart';
 import '../reference_object/card_detector.dart';
 import '../reference_object/reference_object.dart';
@@ -34,6 +35,10 @@ class _PhotoReferenceScreenState extends State<PhotoReferenceScreen> {
   final ReferenceObject _reference = ReferenceObject.creditCard;
   final GlobalKey _captureKey = GlobalKey();
   final CardDetector _detector = CardDetector();
+
+  /// YOLO 다중 클래스 검출기 — 모델 자산 있으면 카드 1차 검출에 활용. 없으면 null 폴백.
+  YoloLengthDetector? _yolo;
+  bool _yoloAttempted = false;
 
   _Step _step = _Step.pickImage;
   XFile? _image;
@@ -90,6 +95,20 @@ class _PhotoReferenceScreenState extends State<PhotoReferenceScreen> {
         debugPrint('[Snap] corner candidates: ${pts.length}');
         if (mounted) setState(() => _cornerCandidates = pts);
       });
+
+      // 1차: YOLO 카드 검출.
+      final yoloCard = await _runYoloCard(x.path);
+      if (!mounted) return;
+      if (yoloCard != null) {
+        setState(() {
+          _pendingImageCorners = yoloCard.cornersImagePx;
+          _autoDetected = true;
+          _detectionStatus = '자동 감지됨 (YOLO) — 필요 시 4점을 미세 조정하세요.';
+        });
+        return;
+      }
+
+      // 2차: 기존 CV CardDetector.
       final det = await _detector.detect(x.path);
       if (!mounted) return;
       if (det == null) {
@@ -107,6 +126,32 @@ class _PhotoReferenceScreenState extends State<PhotoReferenceScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('이미지를 불러오지 못했습니다: $e')));
+    }
+  }
+
+  @override
+  void dispose() {
+    _yolo?.close();
+    super.dispose();
+  }
+
+  /// YOLO 카드 검출 1회 lazy load. 모델 자산 없으면 null 캐시 후 항상 null 반환.
+  Future<CardDetection?> _runYoloCard(String imagePath) async {
+    try {
+      if (!_yoloAttempted) {
+        _yoloAttempted = true;
+        try {
+          _yolo = await YoloLengthDetector.load();
+        } on ModelMissingException {
+          _yolo = null;
+        }
+      }
+      final yolo = _yolo;
+      if (yolo == null) return null;
+      final result = await yolo.detect(imagePath);
+      return result.card;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -233,7 +278,7 @@ class _PhotoReferenceScreenState extends State<PhotoReferenceScreen> {
     }
     setState(() {
       _roiMode = false;
-      _pendingImageCorners = det!.cornersImagePx;
+      _pendingImageCorners = det.cornersImagePx;
       _refCorners = null;
       _autoDetected = true;
       _detectionStatus = '재검색 성공 — 필요 시 4점을 미세 조정하세요.';
