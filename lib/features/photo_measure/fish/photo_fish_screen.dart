@@ -14,6 +14,8 @@ import '../../../shared/dialogs/confirm_exit.dart';
 import '../../../shared/permissions/camera_permission.dart';
 import '../../../shared/sensors/tilt_warning.dart';
 import '../../result/domain/measurement_result.dart';
+import '../ml/length_detection.dart';
+import '../ml/yolo_length_detector.dart';
 import '../planar_rectifier.dart';
 import '../presentation/widgets/draggable_handle.dart';
 import '../reference_object/card_detector.dart';
@@ -33,6 +35,10 @@ class _PhotoFishScreenState extends State<PhotoFishScreen> {
   final GlobalKey _captureKey = GlobalKey();
   final CardDetector _cardDetector = CardDetector();
   final FishDetector _fishDetector = FishDetector();
+
+  /// YOLO 다중 클래스 검출기 — 모델 자산 있으면 로드, 없으면 null로 폴백.
+  YoloLengthDetector? _yolo;
+  bool _yoloAttempted = false;
 
   _Step _step = _Step.setup;
   XFile? _image;
@@ -57,6 +63,16 @@ class _PhotoFishScreenState extends State<PhotoFishScreen> {
   Offset? _endpointB;
   bool _fishAuto = false;
   String? _detectStatus;
+
+  /// YOLO가 감지한 물고기 머리·꼬리(이미지 픽셀). LayoutBuilder에서 위젯 좌표로 변환.
+  Offset? _pendingFishHead;
+  Offset? _pendingFishTail;
+
+  @override
+  void dispose() {
+    _yolo?.close();
+    super.dispose();
+  }
 
   Future<void> _pick(ImageSource source) async {
     if (source == ImageSource.camera) {
@@ -89,6 +105,25 @@ class _PhotoFishScreenState extends State<PhotoFishScreen> {
         _fishAuto = false;
         _detectStatus = null;
       });
+
+      // 1차: YOLO 다중 클래스 검출 (모델 있을 때만 동작).
+      final yoloResult = await _runYolo(x.path);
+      if (!mounted) return;
+      if (yoloResult != null && yoloResult.card != null) {
+        setState(() {
+          _pendingCardImagePx = yoloResult.card!.cornersImagePx;
+          _cardAuto = true;
+          _calibStatus = '카드 자동 감지됨 (YOLO) — 필요 시 미세 조정하세요.';
+        });
+        if (yoloResult.fish != null) {
+          // 물고기까지 자동 감지: 카드 매테리얼라이즈 후 refine 단계로 곧장.
+          _pendingFishHead = yoloResult.fish!.headPoint;
+          _pendingFishTail = yoloResult.fish!.tailPoint;
+        }
+        return;
+      }
+
+      // 2차: 기존 CV CardDetector.
       final det = await _cardDetector.detect(x.path);
       if (!mounted) return;
       if (det == null) {
@@ -104,6 +139,26 @@ class _PhotoFishScreenState extends State<PhotoFishScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('이미지를 불러오지 못했습니다: $e')));
+    }
+  }
+
+  /// YOLO 검출기를 한 번만 시도 로드. 자산 없으면 null 반환하고 이후 호출에서 캐시 사용.
+  Future<LengthDetection?> _runYolo(String imagePath) async {
+    try {
+      if (!_yoloAttempted) {
+        _yoloAttempted = true;
+        try {
+          _yolo = await YoloLengthDetector.load();
+        } on ModelMissingException {
+          _yolo = null;
+        }
+      }
+      final yolo = _yolo;
+      if (yolo == null) return null;
+      final result = await yolo.detect(imagePath);
+      return result.isEmpty ? null : result;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -127,6 +182,19 @@ class _PhotoFishScreenState extends State<PhotoFishScreen> {
         .map((p) => Offset(p.dx * sx, p.dy * sy))
         .toList();
     _pendingCardImagePx = null;
+
+    // YOLO가 물고기 끝점도 같이 줬다면 위젯 좌표로 변환 후 refine 단계로 직행.
+    if (_pendingFishHead != null && _pendingFishTail != null) {
+      _endpointA =
+          Offset(_pendingFishHead!.dx * sx, _pendingFishHead!.dy * sy);
+      _endpointB =
+          Offset(_pendingFishTail!.dx * sx, _pendingFishTail!.dy * sy);
+      _fishAuto = true;
+      _detectStatus = 'YOLO 자동 검출 완료 — 필요 시 끝점·카드 보정하세요.';
+      _pendingFishHead = null;
+      _pendingFishTail = null;
+      _step = _Step.refine;
+    }
   }
 
   void _initCardFallback(Size area) {
@@ -492,6 +560,8 @@ class _PhotoFishScreenState extends State<PhotoFishScreen> {
                         _image = null;
                         _cardCorners = null;
                         _pendingCardImagePx = null;
+                        _pendingFishHead = null;
+                        _pendingFishTail = null;
                         _bboxStart = null;
                         _bboxEnd = null;
                         _endpointA = null;
