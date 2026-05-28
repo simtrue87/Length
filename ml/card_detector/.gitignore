@@ -1,0 +1,13 @@
+# Python venv·캐시
+.venv/
+__pycache__/
+*.pyc
+
+# 데이터·산출물 (용량 큼, 깃에 안 올림)
+data/
+runs/
+synth/card_textures/
+synth/backgrounds/
+*.pt
+*.onnx
+*.tflite

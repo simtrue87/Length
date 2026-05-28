@@ -1,0 +1,12 @@
+# 신용카드 YOLO11n-seg 학습 워크스페이스 의존성
+ultralytics>=8.3.0
+opencv-python>=4.10.0
+albumentations>=1.4.0
+numpy>=1.26.0
+Pillow>=10.0.0
+midv500>=0.5.0
+tqdm>=4.66.0
+# ONNX/TFLite 변환용
+onnx>=1.16.0
+onnxruntime>=1.18.0
+tensorflow>=2.16.0
