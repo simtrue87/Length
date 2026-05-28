@@ -194,6 +194,16 @@
 - 단순 목록 → ChoiceChip 필터(전체/4종) + 날짜 그룹(오늘/어제/이번주/이전) + 캡처 썸네일(없으면 종류 아이콘).
 - 부제목에 `{kind} · {modeLabel} · HH:mm` 정보 밀도 ↑. 그룹 헤더가 날짜를 대체.
 
+### 결정 35. YOLO 모델 — 다중 클래스 확장 (credit_card + fish)
+- 일자: 2026-05-28
+- 단일 클래스(credit_card) 계획을 다중 클래스로 확장. 한 번의 추론으로 카드(스케일)와 측정 대상(물고기)을 동시 검출.
+- 클래스: `0=credit_card`, `1=fish`. Roboflow Length 프로젝트(`-3nqpn/length-tbyev`)에 두 클래스 모두 사용.
+- 합성 데이터는 카드만(class 0). 물고기는 현실감 부족으로 합성 불가, 실사 200~400장 직접 촬영·라벨링.
+- 시나리오 분배: 카드 단독 100장 + 카드+물고기 100장 + 물고기 단독 50장.
+- Flutter 통합: `YoloLengthDetector` 단일 클래스에서 `{card, fish}` 결과 모두 반환. PhotoFishScreen은 자동 양쪽 감지 후 fish 머리~꼬리 직선 측정.
+- 게이트 추가: 물고기 마스크 IoU ≥ 0.85, 머리~꼬리 길이 오차 ≤ 5%.
+- 모델 파일명: `card_yolo11n_seg.tflite` → `length_yolo11n_seg.tflite`.
+
 ### 결정 34. 라벨링 도구 — Roboflow로 확정 (AnyLabeling 후순위)
 - 일자: 2026-05-28
 - 결정 30(Roboflow) → 결정 31(YOLO 도입) → 임시 32(AnyLabeling 검토) → 본 결정으로 Roboflow 복귀.

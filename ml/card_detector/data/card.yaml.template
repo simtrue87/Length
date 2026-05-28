@@ -1,0 +1,16 @@
+# Ultralytics YOLO 데이터셋 정의 — Length 다중 클래스
+# 데이터셋 디렉터리(/content/length) 기준 상대 경로 사용
+path: .
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: credit_card
+  1: fish
+
+# Roboflow에서 YOLOv8/v11 Instance Segmentation 포맷으로 export 하면
+# 자동으로 data.yaml 파일이 함께 제공됨. 이 템플릿은 참고용.
+#
+# 셋 구성 시 권장 분할:
+#   train 70% / val 20% / test 10%

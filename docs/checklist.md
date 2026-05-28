@@ -81,12 +81,20 @@
 - [x] `opencv_dart` 도입 및 빌드 검증 (1.4.5, APK ~45~56MB per ABI)
 - [x] 신용카드 자동 4점 감지 (Canny + findContours + approxPolyDP)
 - [x] 신용카드 검출 고도화 v1 (minAreaRect, 적응형 Canny, adaptive threshold, ROI 재검색 fallback, 코너 스냅) — A90 5G 실기기 검증 후 한계 확인 (카드+폰 인접 시 컨투어 융합)
-- [ ] **신용카드 YOLO11n-seg 모델 도입 (W8b)** — 카드+폰 인접·반사·복잡 배경 대응 정공법. `docs/models/credit_card_yolo.md` 절차
-  - [ ] Phase A: 데이터셋 준비 (MIDV-500 + 합성 + 실사)
-  - [ ] Phase B: YOLO11n-seg 학습 (단일 클래스 credit_card)
-  - [ ] Phase C: ONNX → TFLite INT8 변환 (≤8MB, ≤150ms)
-  - [ ] Phase D: `YoloCardDetector` Dart 통합 + CV 폴백 체인
-  - [ ] Phase E: 벤치마크 검증 (자동 4점 ≥85%, corner err ≤10px)
+- [ ] **Length 다중 클래스 YOLO11n-seg 모델 도입 (W8b)** — 카드(scale) + 물고기(측정 대상)를 한 번의 추론으로. `docs/models/credit_card_yolo.md`
+  - [x] Phase A.0: 환경 셋업 (venv, Roboflow 연동 검증) — 2026-05-28
+  - [ ] Phase A: 데이터셋 준비
+    - [ ] 카드 텍스처 20~30종 수집
+    - [ ] 배경 100~200장 수집
+    - [ ] 합성 데이터 3000장 생성·업로드 (class 0)
+    - [ ] 실사 200~400장 촬영 (카드 단독·카드+물고기·물고기 단독)
+    - [ ] Roboflow Smart Polygon으로 두 클래스 라벨링
+  - [ ] Phase B: 다중 클래스 학습 (credit_card + fish)
+  - [ ] Phase C: ONNX → TFLite INT8 변환 (≤8MB, ≤200ms)
+  - [ ] Phase D: `YoloLengthDetector` Dart 통합 + CV 폴백 체인
+    - [ ] PhotoReferenceScreen: 카드 자동 감지 폴백 체인 갱신
+    - [ ] PhotoFishScreen: 카드+물고기 동시 자동 감지 + 머리~꼬리 직선
+  - [ ] Phase E: 벤치마크 (카드 자동 4점 ≥85%/corner err ≤10px, 물고기 IoU ≥0.85/길이 오차 ≤5%)
   - [ ] Phase F: 롤아웃 (모델 자산 번들 또는 다운로드)
 - [ ] A4 감지 (YOLO 다중 클래스 확장)
 - [ ] 100원/500원 동전 감지 (YOLO + Hough Circle)
