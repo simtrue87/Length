@@ -16,6 +16,7 @@ import '../../../shared/sensors/tilt_warning.dart';
 import '../../result/domain/measurement_result.dart';
 import '../planar_rectifier.dart';
 import '../presentation/widgets/draggable_handle.dart';
+import 'aruco_detector.dart';
 import 'marker_detector.dart';
 
 enum _Step { setup, calibrate, measure }
@@ -31,6 +32,7 @@ class _PhotoMarkerScreenState extends ConsumerState<PhotoMarkerScreen> {
   final ImagePicker _picker = ImagePicker();
   final GlobalKey _captureKey = GlobalKey();
   final MarkerDetector _detector = MarkerDetector();
+  final ArucoDetector _arucoDetector = ArucoDetector();
   final TextEditingController _sizeCtrl = TextEditingController();
 
   @override
@@ -127,18 +129,30 @@ class _PhotoMarkerScreenState extends ConsumerState<PhotoMarkerScreen> {
 
   Future<void> _detect(String path) async {
     try {
-      final det = await _detector.detectInImage(path);
+      // 1차: QR/DataMatrix (mobile_scanner)
+      final qr = await _detector.detectInImage(path);
       if (!mounted) return;
-      if (det == null) {
-        setState(() => _detectionStatus = '마커를 찾지 못했습니다. 4점을 수동으로 맞추세요.');
+      if (qr != null) {
+        setState(() {
+          _qrValue = qr.rawValue;
+          _detectionStatus = 'QR 감지됨${qr.rawValue != null ? ' — "${qr.rawValue}"' : ''}';
+        });
+        _pendingImageCorners = qr.cornersImagePx;
         return;
       }
-      setState(() {
-        _qrValue = det.rawValue;
-        _detectionStatus = '감지됨${det.rawValue != null ? ' — "${det.rawValue}"' : ''}';
-      });
-      // 영상-위젯 매핑은 LayoutBuilder에서 area 알게 된 후 변환.
-      _pendingImageCorners = det.cornersImagePx;
+      // 2차: ArUco (opencv_dart, 사전 4종 순회)
+      final aruco = await _arucoDetector.detect(path);
+      if (!mounted) return;
+      if (aruco != null) {
+        setState(() {
+          _qrValue = 'ArUco #${aruco.markerId}';
+          _detectionStatus =
+              'ArUco 감지됨 — ${aruco.dictionaryName} ID ${aruco.markerId}';
+        });
+        _pendingImageCorners = aruco.cornersImagePx;
+        return;
+      }
+      setState(() => _detectionStatus = 'QR·ArUco 모두 못 찾았습니다. 4점을 수동으로 맞추세요.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _detectionStatus = '감지 오류: $e. 수동으로 맞추세요.');

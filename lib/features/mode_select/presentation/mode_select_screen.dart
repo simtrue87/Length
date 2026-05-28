@@ -90,8 +90,8 @@ class ModeSelectScreen extends ConsumerWidget {
           ),
           _ModeCard(
             icon: Icons.qr_code_2,
-            title: 'QR/마커',
-            subtitle: 'QR을 자동 감지해 4점 보정.',
+            title: 'QR/ArUco 마커',
+            subtitle: 'QR·ArUco·AprilTag 자동 감지로 4점 보정.',
             badge: lastUsed == '/photo/marker' ? '최근' : '자동',
             onTap: () => go('/photo/marker'),
           ),

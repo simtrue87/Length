@@ -194,6 +194,15 @@
 - 단순 목록 → ChoiceChip 필터(전체/4종) + 날짜 그룹(오늘/어제/이번주/이전) + 캡처 썸네일(없으면 종류 아이콘).
 - 부제목에 `{kind} · {modeLabel} · HH:mm` 정보 밀도 ↑. 그룹 헤더가 날짜를 대체.
 
+### 결정 33. ArUco 마커 감지 추가 (W9)
+- 일자: 2026-05-28
+- `aruco_detector.dart` 신설. `opencv_dart`의 `ArucoDetector` + `ArucoDictionary.predefined` 사용.
+- 사전 4종 순회: DICT_4X4_50 → DICT_5X5_100 → DICT_6X6_250 → DICT_APRILTAG_36h11. 첫 매칭 사용.
+- `photo_marker_screen._detect`: 1차 QR (mobile_scanner) → 실패 시 2차 ArUco. 감지된 마커 타입·ID를 상태 텍스트로 표시.
+- 다중 마커 발견 시 가장 큰(가장 잘 보이는) 마커 선택.
+- 모드 선택 화면 라벨: "QR/마커" → "QR/ArUco 마커". 위젯 테스트도 함께 갱신.
+- 향후: 마커 크기(mm) 입력은 기존 그대로. 호모그래피는 PlanarRectifier가 처리.
+
 ### 결정 32. YOLO 카드 모델 ML 환경 — Colab Pro
 - 일자: 2026-05-28
 - 학습 GPU 환경: **Colab Pro (T4/L4)**. 로컬 GPU 없음, Colab Pro 100컴퓨트 유닛으로 yolo11n-seg 100 epochs 충분.

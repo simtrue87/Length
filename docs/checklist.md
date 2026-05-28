@@ -92,10 +92,10 @@
 - [ ] 100원/500원 동전 감지 (YOLO + Hough Circle)
 
 ### W9 — 마커 & 호모그래피
-- [ ] ArUco 마커 감지 (`opencv_dart`) — opencv_dart 도입 보류로 추후
+- [x] ArUco 마커 감지 (`opencv_dart`) — DICT_4X4_50/5X5_100/6X6_250/APRILTAG_36h11 순회, QR 실패 시 폴백 (2026-05-28)
 - [x] QR 코드 감지 (`mobile_scanner`) + 자동 4점 보정 + 수동 폴백
-- [ ] `findHomography` + `warpPerspective` 평면 정합 — opencv_dart 필요
-- [ ] 호모그래피 적용 전후 정확도 비교
+- [x] `findHomography` + `warpPerspective` 평면 정합 — `PlanarRectifier` (W4부터 도입)
+- [ ] 호모그래피 적용 전후 정확도 비교 (벤치마크 단계)
 
 ### W10 — 세그멘테이션 & 벤치마크
 - [ ] SAM 2 Tiny 또는 MobileSAM 모바일 변환

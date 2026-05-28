@@ -39,7 +39,7 @@ void main() {
     await _pump(tester, _cap(ar: true));
     expect(find.text('AR 두 점 측정'), findsOneWidget);
     expect(find.text('참조 객체'), findsOneWidget);
-    expect(find.text('QR/마커'), findsOneWidget);
+    expect(find.text('QR/ArUco 마커'), findsOneWidget);
     expect(find.text('AI 깊이 추정'), findsOneWidget);
     expect(find.text('캘리브레이션 + 평면'), findsOneWidget);
     expect(find.text('자동'), findsOneWidget);
